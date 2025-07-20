@@ -11,18 +11,18 @@ library('igraph')
 # 関数群の読み込み
 source('functions.r', encoding='utf8') 
 
+# データハンドリング
 # ファイルの読み込み
 # data/interview/ 配下にある想定
 # ※当該のExecelファイルは閉じておく
 files = c(
-    './data/interview/応用Ⅰ整理データ_1班.xlsx',
-    './data/interview/応用Ⅰ整理データ_2班.xlsx',
-    './data/interview/応用Ⅰ整理データ_3班.xlsx',
-    './data/interview/応用Ⅰ整理データ_4班再提出.xlsx',
-    './data/interview/応用Ⅰ整理データ_5班.xlsx'
+    './data/interview/応用Ⅰ整理データ_1班2025.xlsx',
+    './data/interview/応用Ⅰ整理データ_2班2025.xlsx',
+    './data/interview/応用Ⅰ整理データ_3班2025.xlsx',
+    './data/interview/応用Ⅰ整理データ_4班2025.xlsx'
 )
 
-for(i in 1:5){
+for(i in 1:4){
     if(i == 1){
         df = read.xlsx(files[i], sheet='data')
         df$group = i
@@ -34,17 +34,22 @@ for(i in 1:5){
 }
 
 df %>% dim()
-table(df$group, df$person)
+# table(df$group, df$person)
+table(df$person, df$group)
 
-# contentが空の行を除く
+# contentが空の行を除く(あれば)
+
+df[is.na(df$content),]  # 確認
 df = df[!is.na(df$content),]
 
 # データセットの成形
+# NAを確認
+is.na(df)
 # NAを0に変える
 df[is.na(df)] = 0
 
-
 # 学生のデータを除く
+# 確認
 df %>% filter(str_detect(person, '学')) %>% select(person) %>% table()
 counted = df %>% filter(!str_detect(person, '学')) %>% select(person) %>% table()
 counted
@@ -54,13 +59,10 @@ excluded = counted[counted < 30] %>% names()
 excluded
 
 
-
 df = df %>% filter(!str_detect(person, '学'))
 df = df %>% filter(! person %in% excluded)
 
 df$person %>% table()
-
-
 
 
 # x = df %>% filter(str_detect(person, '0')) 
@@ -78,17 +80,17 @@ count_noun = docMatrixDF(groups[,'text'], pos=c('名詞'))
 count_noun %>% dim()
 
 freq_noun = count_noun %>% rowSums()
-freq_noun %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
+freq_noun %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.8)
 
 # cexパラメータで適宜文字サイズを調整(大きすぎると全部が表示されなくなる)
 freq_noun %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1)
 
 # xlimでxの表示範囲を変えられる
-freq_noun %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1, xlim=c(0, 500))
+freq_noun %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1, xlim=c(0, 700))
 freq_noun %>% sort() %>% tail(30) 
 
 
-# クリーニング
+# クリーニングの例
 # 括弧の部分を削る
 
 # 丸括弧
@@ -96,6 +98,7 @@ df$content %>% str_extract_all('[(（][^)）]+[)）]')
 df$content = df$content %>% str_replace_all('[(（][^)）]+[)）]', '')
 
 
+# 角括弧
 df$content %>% str_extract_all('\\[[^\\]]+\\]')
 df$content = df$content %>% str_replace_all('\\[[^\\]]+\\]', '')
 
@@ -112,11 +115,8 @@ df$content = df$content %>% str_replace_all('みなさん', '皆さん')
 
 
 
-# ストップワード
-stopwords = c('人', 'こと', 'それ', 'ん', 'の', '時', 'よう',
-              'これ', 'さん', '方', '何',  'ところ','あれ', 'ー', '一', 
-              'ここ', 'もの', 'みたい', 'ちょ', '二', 'もん', 'とこ', 'とき'
-              )
+# 最低限のストップワード
+stopwords = c('みたい', 'ん', 'の', 'ー', 'なん', '人')
 # シンボル
 symbols = '^[0-9０-９()（）,.ー\\-∼～~〜一十、。…!！?？]+$'
 
@@ -137,7 +137,9 @@ freq_noun %>% head()
 freq_noun[(! names(freq_noun) %in% stopwords) & !str_detect(names(freq_noun), symbols)] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 freq_noun[(names(freq_noun) %in% stopwords) | str_detect(names(freq_noun), symbols)]
 
-# count_noun[(! rownames(count_noun) %in% stopwords) & (!str_detect(rownames(count_noun), symbols)), 'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
+count_noun[(! rownames(count_noun) %in% stopwords) & (!str_detect(rownames(count_noun), symbols)), 'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
+
+
 
 # 課題2
 # グループごとの頻出語
@@ -148,11 +150,11 @@ remove_stopwords = function(df, stopwords, symbols){
     return(df[(! rownames(df) %in% stopwords) & (!str_detect(rownames(df), symbols)),]) 
 }
 
-remove_stopwords(count_noun, stopwords, symbols)[,'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns (group 1)', xlab='Frequency', cex.names=1.0)
+remove_stopwords(count_noun, stopwords, symbols)[,'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns (group 1)', xlab='Frequency', cex.names=0.5)
 remove_stopwords(count_noun, stopwords, symbols)[,'ROW.2'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns (group 2)', xlab='Frequency', cex.names=0.5)
 remove_stopwords(count_noun, stopwords, symbols)[,'ROW.3'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns (group 3)', xlab='Frequency', cex.names=0.5)
 remove_stopwords(count_noun, stopwords, symbols)[,'ROW.4'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
-remove_stopwords(count_noun, stopwords, symbols)[,'ROW.5'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns (group 5)', xlab='Frequency', cex.names=0.5)
+
 
 # 課題3 
 # TFIDFを求める
@@ -161,8 +163,8 @@ remove_stopwords(count_noun, stopwords, symbols)[,'ROW.5'] %>% sort() %>% tail(3
 tfidf = tf(count_noun) * idf(count_noun) 
 
 # TFIDFを一枚のplotにおさめる
-par(mfrow=c(1,5)) 
-for(i in 1:5){
+par(mfrow=c(1,4)) 
+for(i in 1:4){
     tfidf[(!rownames(tfidf) %in% stopwords) & (!str_detect(rownames(tfidf), symbols)), i] %>% 
     sort() %>% 
     tail(30)  %>%  barplot(horiz=T, las=2, main=character(i))
@@ -177,9 +179,26 @@ colnames(df)
 colnames(df) = colnames(df) %>% str_replace('#', '')
 
 topics = colnames(df)[5:9]
-topics
+colnames(df)[5:9]
 
-df[topics]
+
+# タグが数値で入っているか確認
+topics
+df$basic
+df$childhood
+df$hometown
+df$pastfamily
+df$presentfamily
+
+df$basic = as.numeric(df$basic)
+df$childhood = as.numeric(df$childhood)
+df$hometown = as.numeric(df$hometown)
+df$pastfamily = as.numeric(df$pastfamily)
+df$presentfamily = as.numeric(df$presentfamily)
+
+df[is.na(df)] = 0
+
+
 df %>% group_by(group) %>% summarise(
     basic = sum(basic), childhood=sum(childhood),
     hometown=sum(hometown), pastfamily=sum(pastfamily), presentfamily=sum(presentfamily))
@@ -188,7 +207,7 @@ df %>% group_by(group) %>% summarise(
 df[topics] %>% rowSums() %>% table()
 
 # トピックごとにまとめたデータフレームを作る
-for(i in 1:5){
+for(i in 1:4){
     if(i == 1){
         df_topic = df[df[topics[i]] == 1, ]
         df_topic$topic = topics[i]
@@ -212,12 +231,11 @@ remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.1'] %>% sort() %>%
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.2'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.3'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.4'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
-remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.5'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 
 tfidf = tf(count_noun_topic) * idf(count_noun_topic) 
 
 # TFIDFを一枚のplotにおさめる
-par(mfrow=c(1,5)) 
+par(mfrow=c(1,4)) 
 for(i in 1:5){
     tfidf[(!rownames(tfidf) %in% stopwords) & (!str_detect(rownames(tfidf), symbols)), i] %>% 
     sort() %>% 
@@ -236,7 +254,7 @@ res = map(df_topic[df_topic$basic == 1,'content'], get_cooc, pos=c('名詞'), st
 d = parse_cooc(names(res), as.vector(res))
 d %>% head()
 net = d %>% 
-    filter(freq > 40)
+    filter(freq > 10)
 net %>% dim()
 net %>% graph_from_data_frame() %>% as.undirected() %>% tkplot(vertex.color='SkyBlue', vertex.size=22)
 
@@ -251,8 +269,8 @@ show_cooc = function(column, min_freq){
     net %>% graph_from_data_frame() %>% as.undirected() %>% tkplot(vertex.color='SkyBlue', vertex.size=22)
 }
 
-show_cooc('childhood', 40)
-show_cooc('hometown', 30)
-show_cooc('pastfamily', 40)
-show_cooc('presentfamily', 20)
+show_cooc('childhood', 10)
+show_cooc('hometown', 10)
+show_cooc('pastfamily', 10)
+show_cooc('presentfamily', 10)
 
