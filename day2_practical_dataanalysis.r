@@ -135,14 +135,13 @@ freq_noun = count_noun %>% rowSums()
 freq_noun %>% head()
 
 freq_noun[(! names(freq_noun) %in% stopwords) & !str_detect(names(freq_noun), symbols)] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
-freq_noun[(names(freq_noun) %in% stopwords) | str_detect(names(freq_noun), symbols)]
-
-count_noun[(! rownames(count_noun) %in% stopwords) & (!str_detect(rownames(count_noun), symbols)), 'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
-
+# freq_noun[(names(freq_noun) %in% stopwords) | str_detect(names(freq_noun), symbols)]
 
 
 # 課題2
 # グループごとの頻出語
+
+count_noun[(! rownames(count_noun) %in% stopwords) & (!str_detect(rownames(count_noun), symbols)), 'ROW.1'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=0.5)
 
 
 # 関数化しておく
@@ -207,7 +206,7 @@ df %>% group_by(group) %>% summarise(
 df[topics] %>% rowSums() %>% table()
 
 # トピックごとにまとめたデータフレームを作る
-for(i in 1:4){
+for(i in 1:5){ # 
     if(i == 1){
         df_topic = df[df[topics[i]] == 1, ]
         df_topic$topic = topics[i]
@@ -231,12 +230,13 @@ remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.1'] %>% sort() %>%
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.2'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.3'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.4'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
+remove_stopwords(count_noun_topic, stopwords, symbols)[, 'ROW.5'] %>% sort() %>% tail(30) %>% barplot(horiz=T, las=1, main='Top 30 nouns', xlab='Frequency', cex.names=1.0)
 
 tfidf = tf(count_noun_topic) * idf(count_noun_topic) 
 
 # TFIDFを一枚のplotにおさめる
-par(mfrow=c(1,4)) 
-for(i in 1:5){
+par(mfrow=c(1,5)) 
+for(i in 1:5){ 
     tfidf[(!rownames(tfidf) %in% stopwords) & (!str_detect(rownames(tfidf), symbols)), i] %>% 
     sort() %>% 
     tail(30)  %>%  barplot(horiz=T, las=2, main=character(i))
@@ -258,6 +258,8 @@ net = d %>%
 net %>% dim()
 net %>% graph_from_data_frame() %>% as.undirected() %>% tkplot(vertex.color='SkyBlue', vertex.size=22)
 
+# tkplotが使えない環境ではplotを使う
+net %>% graph_from_data_frame() %>% as.undirected() %>% plot()
 
 # 表示用の関数を作る
 show_cooc = function(column, min_freq){
